@@ -1,0 +1,51 @@
+version: '3.6'
+
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    build: docker/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_VHOST: '/'
+    ports:
+      - 15672:15672
+
+  producer-fpm:
+    container_name: producer-fpm
+    build: docker/producer/fpm
+    volumes:
+      - ./producer:/var/producer
+    links:
+      - rabbitmq
+
+  producer-nginx:
+    container_name: producer-nginx
+    build: docker/producer/nginx
+    links:
+      - producer-fpm
+    ports:
+      - 80:80
+
+  consumer-php-fpm:
+    build: docker/consumer/php/fpm
+    volumes:
+      - ./consumer/php:/var/consumer
+    links:
+      - rabbitmq
+    restart: always
+
+  consumer-laravel-fpm:
+    container_name: consumer-laravel-fpm
+    build: docker/consumer/laravel/fpm
+    volumes:
+      - ./consumer/laravel:/var/consumer
+    links:
+      - rabbitmq
+    restart: always
+    ports:
+      - 8000:8000
+
+  redis:
+    container_name: redis
+    build: docker/redis
+    ports:
+      - 6379:6379
